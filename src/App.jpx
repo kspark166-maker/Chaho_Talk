@@ -1,0 +1,1302 @@
+import { useState, useRef, useCallback, useEffect } from "react";
+
+// ══════════════════════════════════════════════════════════════════════════
+// THEMES
+// ══════════════════════════════════════════════════════════════════════════
+const THEMES = {
+  chaho:{ name:"チャホ！",icon:"🌊","--t1":"#5bc8d4","--t1d":"#2d9aa8","--t1p":"#edf8fa","--t2":"#c0524a","--t2d":"#9a3830","--t2p":"#faecea","--bg":"#f5f7f8","--card":"#fff","--ink":"#1e2428","--mid":"#6b7a80","--light":"#b0bec5","--shadow":"rgba(30,80,90,.10)","--hbg":"#fff","--hborder":"rgba(91,200,212,.22)","--grad":"linear-gradient(150deg,#eaf7f9,#f5f7f8 50%,#faf0ee)","--btnme":"linear-gradient(135deg,#c0524a,#9a3830)","--btnnav":"linear-gradient(135deg,#5bc8d4,#2d9aa8)","--dot":"#5bc8d4","--dotbar":"linear-gradient(90deg,#5bc8d4,#c0524a)" },
+  chic: { name:"シック",icon:"◼","--t1":"#9e9e9e","--t1d":"#616161","--t1p":"rgba(100,100,100,.18)","--t2":"#78909c","--t2d":"#546e7a","--t2p":"rgba(84,110,122,.18)","--bg":"#181c1f","--card":"#23282c","--ink":"#eceff1","--mid":"#90a4ae","--light":"#546e7a","--shadow":"rgba(0,0,0,.45)","--hbg":"#1a1e22","--hborder":"rgba(144,164,174,.18)","--grad":"linear-gradient(150deg,#181c1f,#1e2428)","--btnme":"linear-gradient(135deg,#546e7a,#37474f)","--btnnav":"linear-gradient(135deg,#78909c,#546e7a)","--dot":"#78909c","--dotbar":"linear-gradient(90deg,#78909c,#546e7a)" },
+  warm: { name:"暖かい",icon:"🍂","--t1":"#bf8a5e","--t1d":"#a0693a","--t1p":"#fdf3eb","--t2":"#a05060","--t2d":"#7d3245","--t2p":"#faedef","--bg":"#faf6f2","--card":"#fff","--ink":"#2a1f18","--mid":"#7a6050","--light":"#c4a882","--shadow":"rgba(80,40,20,.10)","--hbg":"#fff","--hborder":"rgba(191,138,94,.22)","--grad":"linear-gradient(150deg,#fdf3eb,#faf6f2 50%,#faedef)","--btnme":"linear-gradient(135deg,#a05060,#7d3245)","--btnnav":"linear-gradient(135deg,#bf8a5e,#a0693a)","--dot":"#bf8a5e","--dotbar":"linear-gradient(90deg,#bf8a5e,#a05060)" },
+  navy: { name:"ネイビー",icon:"🌙","--t1":"#7986cb","--t1d":"#5c6bc0","--t1p":"#e8eaf6","--t2":"#ef9a9a","--t2d":"#e57373","--t2p":"#fce4ec","--bg":"#f3f4f8","--card":"#fff","--ink":"#1a1d2e","--mid":"#6670a0","--light":"#b0b8d8","--shadow":"rgba(30,40,100,.10)","--hbg":"#fff","--hborder":"rgba(121,134,203,.22)","--grad":"linear-gradient(150deg,#e8eaf6,#f3f4f8 50%,#fce4ec)","--btnme":"linear-gradient(135deg,#ef9a9a,#e57373)","--btnnav":"linear-gradient(135deg,#7986cb,#5c6bc0)","--dot":"#7986cb","--dotbar":"linear-gradient(90deg,#7986cb,#ef9a9a)" },
+};
+
+const applyTheme = tid => {
+  const t = THEMES[tid] || THEMES.chaho;
+  Object.entries(t).forEach(([k,v]) => { if (k.startsWith("--")) document.documentElement.style.setProperty(k, v); });
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// HELPERS & CONSTANTS
+// ══════════════════════════════════════════════════════════════════════════
+const fmt     = ts => new Date(ts).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+const fmtDate = ts => new Date(ts).toLocaleDateString("ja-JP",{month:"long",day:"numeric"});
+const genId   = () => Math.random().toString(36).slice(2,10);
+
+// ── Logo
+const ChahoLogo = ({ size="md" }) => {
+  const fs=size==="lg"?36:size==="sm"?15:24,sw=size==="lg"?5.5:size==="sm"?2:4;
+  const sh=w=>{const s=[];for(let x=-w;x<=w;x++)for(let y=-w;y<=w;y++){if(!x&&!y)continue;s.push(`${x}px ${y}px 0 white`);}return s.join(",");};
+  const b={fontFamily:"'M PLUS Rounded 1c',sans-serif",fontWeight:900,fontSize:fs,lineHeight:1,display:"inline-block",textShadow:sh(sw),WebkitTextStroke:`${sw*.35}px white`,paintOrder:"stroke fill"};
+  return <span style={{display:"inline-flex",alignItems:"center",gap:2,lineHeight:1}}><span style={{...b,color:"#5bc8d4"}}>チャ</span><span style={{...b,color:"#c0524a"}}>ホ</span><span style={{...b,color:"#5bc8d4"}}>！</span></span>;
+};
+
+// ── SVG キャラ
+const PupSVG=({sz=80})=>(<svg width={sz} height={sz} viewBox="0 0 100 100" fill="none"><ellipse cx="26" cy="30" rx="14" ry="19" fill="#5bc8d4" transform="rotate(-15 26 30)"/><ellipse cx="50" cy="72" rx="26" ry="20" fill="white"/><circle cx="50" cy="44" r="26" fill="white"/><ellipse cx="58" cy="52" rx="12" ry="8" fill="white"/><ellipse cx="63" cy="50" rx="6" ry="4" fill="#2a2a2a"/><ellipse cx="42" cy="40" rx="4" ry="4.5" fill="#2a2a2a"/><ellipse cx="56" cy="40" rx="4" ry="4.5" fill="#2a2a2a"/><circle cx="43.5" cy="38.5" r="1.5" fill="white"/><circle cx="57.5" cy="38.5" r="1.5" fill="white"/><circle cx="38" cy="50" r="5" fill="#e0f7fa" opacity=".8"/><circle cx="65" cy="50" r="5" fill="#e0f7fa" opacity=".8"/><path d="M52 56 Q56 61 62 58" stroke="#2a2a2a" strokeWidth="2" strokeLinecap="round" fill="none"/></svg>);
+const BotSVG=({sz=80})=>(<svg width={sz} height={sz} viewBox="0 0 100 100" fill="none"><ellipse cx="50" cy="75" rx="28" ry="18" fill="white" stroke="#e8d0ce" strokeWidth="1.5"/><rect x="43" y="54" width="14" height="10" rx="7" fill="white" stroke="#e8d0ce" strokeWidth="1.5"/><circle cx="50" cy="40" r="28" fill="white" stroke="#e8d0ce" strokeWidth="1.5"/><line x1="50" y1="13" x2="50" y2="5" stroke="#c0524a" strokeWidth="3" strokeLinecap="round"/><circle cx="50" cy="4" r="3.5" fill="#c0524a"/><rect x="34" y="37" width="32" height="6" rx="3" fill="#c0524a" opacity=".5"/><path d="M38 52 Q50 57 62 52" stroke="#d0a0a0" strokeWidth="2" strokeLinecap="round" fill="none"/><ellipse cx="16" cy="72" rx="8" ry="12" fill="white" stroke="#e8d0ce" strokeWidth="1.5" transform="rotate(15 16 72)"/><ellipse cx="84" cy="72" rx="8" ry="12" fill="white" stroke="#e8d0ce" strokeWidth="1.5" transform="rotate(-15 84 72)"/><circle cx="34" cy="46" r="4.5" fill="#faecea" opacity=".8"/><circle cx="66" cy="46" r="4.5" fill="#faecea" opacity=".8"/><path d="M46 72 C46 70 50 67 50 70 C50 67 54 70 54 72 C54 75 50 78 50 78 C50 78 46 75 46 72Z" fill="#c0524a" opacity=".5"/></svg>);
+
+// ── Avatar（ユーザーアイコン表示）
+const Avatar = ({ user, size=38, style={} }) => {
+  const bg = user?.color || "linear-gradient(135deg,#5bc8d4,#2d9aa8)";
+  return (
+    <div style={{ width:size, height:size, borderRadius:"50%", background:bg,
+      display:"flex", alignItems:"center", justifyContent:"center",
+      fontSize:size*0.45, flexShrink:0, overflow:"hidden", ...style }}>
+      {user?.avatar
+        ? <img src={user.avatar} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+        : (user?.emoji || user?.name?.[0] || "👤")}
+    </div>
+  );
+};
+
+// ── Button
+const Btn = ({ onClick, children, style={}, v="primary", sm=false, dis=false }) => {
+  const base = { border:"none", borderRadius:sm?7:9, cursor:dis?"default":"pointer",
+    fontWeight:600, fontSize:sm?11:13, padding:sm?"5px 12px":"8px 18px",
+    lineHeight:1.4, opacity:dis?.4:1, fontFamily:"inherit", transition:"opacity .15s" };
+  const vs = {
+    primary:   { background:"var(--btnnav)", color:"white" },
+    secondary: { background:"var(--btnme)", color:"white" },
+    ghost:     { background:"rgba(128,128,128,.1)", color:"var(--ink)", border:"1px solid rgba(128,128,128,.18)" },
+    danger:    { background:"rgba(220,60,60,.1)", color:"#c0524a", border:"1px solid rgba(220,60,60,.2)" },
+  };
+  return <button onClick={dis?undefined:onClick} style={{...base,...vs[v],...style}}>{children}</button>;
+};
+
+// ── Section Card
+const Card = ({ children, style={} }) => (
+  <div style={{ background:"var(--card)", borderRadius:14, padding:"14px 16px",
+    boxShadow:"0 1px 6px var(--shadow)", border:"1px solid rgba(128,128,128,.08)", ...style }}>
+    {children}
+  </div>
+);
+
+// ══════════════════════════════════════════════════════════════════════════
+// DEMO DATA（デモ用ユーザーデータ）
+// ══════════════════════════════════════════════════════════════════════════
+const DEMO_USERS = [
+  { id:"user_taro",   name:"水谷 太郎", nickname:"みずや",  emoji:"🌊", color:"linear-gradient(135deg,#5bc8d4,#2d9aa8)", bio:"旅と写真が好き。週末はカメラを持って散歩してます📷", job:"デザイナー", hobbies:"写真・カフェ巡り・映画" },
+  { id:"user_akane",  name:"佐藤 茜",   nickname:"あかね",  emoji:"🌺", color:"linear-gradient(135deg,#c0524a,#9a3830)", bio:"美味しいものを食べるのが生きがい🍜 猫好き🐱", job:"カフェ店員", hobbies:"料理・読書・猫カフェ" },
+  { id:"user_kenji",  name:"田中 健二", nickname:"けんじ",  emoji:"⚽", color:"linear-gradient(135deg,#5c6bc0,#3949ab)", bio:"サッカー大好き！週末は公園でフットサルしてます", job:"会社員", hobbies:"サッカー・筋トレ・ゲーム" },
+  { id:"user_yuki",   name:"山本 雪",   nickname:"ゆきちゃん",emoji:"❄️",color:"linear-gradient(135deg,#4db6ac,#00897b)", bio:"北海道出身。冬が大好きです⛷️ スイーツも大好き", job:"看護師", hobbies:"スキー・スイーツ巡り・映画" },
+  { id:"user_ryo",    name:"鈴木 涼",   nickname:"りょう",  emoji:"🎸", color:"linear-gradient(135deg,#bf8a5e,#a0693a)", bio:"バンドマン🎸 ライブハウスが庭です。音楽は人生！", job:"ミュージシャン", hobbies:"ギター・ライブ・レコード収集" },
+];
+
+// ══════════════════════════════════════════════════════════════════════════
+// LOCK SCREEN
+// ══════════════════════════════════════════════════════════════════════════
+const LockScreen = ({ onUnlock, savedPin }) => {
+  const [pin,setPin]=useState("");const [shk,setShk]=useState(false);const [hnt,setHnt]=useState(false);
+  const press=d=>{if(pin.length>=4)return;const n=pin+d;setPin(n);if(n.length===4){if(n===savedPin)setTimeout(()=>onUnlock(),260);else{setShk(true);setTimeout(()=>{setPin("");setShk(false);},650);}}};
+  const KS=["1","2","3","4","5","6","7","8","9","","0","⌫"];
+  return(
+    <div style={{position:"relative",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",background:"var(--grad)"}}>
+      <div style={{position:"absolute",left:"4%",bottom:"8%",opacity:.6}}><PupSVG sz={58}/></div>
+      <div style={{position:"absolute",right:"3%",top:"12%",opacity:.6}}><BotSVG sz={54}/></div>
+      <div style={{position:"relative",zIndex:2,background:"var(--card)",borderRadius:20,padding:"22px 26px",
+        boxShadow:"0 6px 24px var(--shadow)",border:"1px solid rgba(255,255,255,.8)",
+        display:"flex",flexDirection:"column",alignItems:"center",gap:16,minWidth:240}}>
+        <ChahoLogo size="lg"/>
+        <div style={{display:"flex",gap:13,animation:shk?"shake .6s":"none"}}>
+          {[0,1,2,3].map(i=><div key={i} style={{width:12,height:12,borderRadius:"50%",
+            background:i<pin.length?"var(--t1)":"transparent",border:"2px solid",
+            borderColor:i<pin.length?"var(--t1)":"var(--light)",transition:"all .15s"}}/>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,54px)",gap:7}}>
+          {KS.map((k,i)=><button key={i} onClick={()=>k==="⌫"?setPin(p=>p.slice(0,-1)):k?press(k):null}
+            style={{height:54,borderRadius:13,background:k?"rgba(128,128,128,.08)":"transparent",
+              border:k?"1px solid rgba(128,128,128,.15)":"none",color:"var(--ink)",
+              fontSize:k==="⌫"?13:17,fontWeight:700,cursor:k?"pointer":"default",fontFamily:"inherit"}}
+            onMouseEnter={e=>k&&(e.currentTarget.style.background="rgba(128,128,128,.18)")}
+            onMouseLeave={e=>k&&(e.currentTarget.style.background="rgba(128,128,128,.08)")}>{k}</button>)}
+        </div>
+        <button onClick={()=>setHnt(!hnt)}
+          style={{background:"none",border:"none",color:"var(--light)",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
+          {hnt?`PIN: ${savedPin}（デモ用）`:"PINを忘れた場合"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// ONBOARDING（初回ユーザー登録）
+// ══════════════════════════════════════════════════════════════════════════
+const Onboarding = ({ onComplete }) => {
+  const [step, setStep] = useState(0); // 0=welcome 1=name 2=emoji 3=bio
+  const [form, setForm] = useState({ name:"", nickname:"", emoji:"🌟", bio:"", job:"", hobbies:"" });
+  const EMOJIS = ["🌟","🌊","🌺","🐾","🤖","🌸","🦊","🐻","🐰","💫","🎀","🎸","⚽","❄️","🍀","🎵","🌙","🦋","🌈","🔥"];
+  const COLORS = [
+    "linear-gradient(135deg,#5bc8d4,#2d9aa8)",
+    "linear-gradient(135deg,#c0524a,#9a3830)",
+    "linear-gradient(135deg,#7986cb,#5c6bc0)",
+    "linear-gradient(135deg,#4db6ac,#00897b)",
+    "linear-gradient(135deg,#bf8a5e,#a0693a)",
+    "linear-gradient(135deg,#a05060,#7d3245)",
+    "linear-gradient(135deg,#5c8a6e,#3d6b52)",
+    "linear-gradient(135deg,#ef9a9a,#e57373)",
+  ];
+  const [colorIdx, setColorIdx] = useState(0);
+  const canNext = step===0 || (step===1&&form.name.trim()) || step===2 || step===3;
+
+  const handleComplete = () => {
+    const uid = "user_" + genId();
+    onComplete({
+      id: uid, name: form.name, nickname: form.nickname || form.name,
+      emoji: form.emoji, bio: form.bio, job: form.job, hobbies: form.hobbies,
+      color: COLORS[colorIdx],
+      friends: [], groups: [],
+      albums: [{ id: genId(), name:"マイアルバム", photos:[] }],
+      diary: [],
+      createdAt: Date.now(),
+    });
+  };
+
+  const inputSt = { width:"100%", border:"1px solid var(--hborder)", borderRadius:10,
+    padding:"10px 12px", fontFamily:"inherit", fontSize:14, background:"var(--t1p)", color:"var(--ink)" };
+
+  return (
+    <div style={{ height:"100%", display:"flex", flexDirection:"column", alignItems:"center",
+      justifyContent:"center", background:"var(--grad)", padding:24, gap:20 }}>
+      <ChahoLogo size="lg"/>
+
+      {step===0 && (
+        <Card style={{ width:"100%", maxWidth:340, textAlign:"center" }}>
+          <div style={{ fontSize:32, marginBottom:10 }}>👋</div>
+          <div style={{ fontSize:18, fontWeight:700, color:"var(--ink)", marginBottom:8 }}>チャホ！へようこそ</div>
+          <div style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7, marginBottom:16 }}>
+            友達とつながって、思い出を記録しよう。<br/>まずはあなたのプロフィールを設定してね！
+          </div>
+          <Btn onClick={()=>setStep(1)} style={{width:"100%",textAlign:"center"}}>はじめる →</Btn>
+        </Card>
+      )}
+
+      {step===1 && (
+        <Card style={{ width:"100%", maxWidth:340 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)", marginBottom:16 }}>👤 基本情報</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div>
+              <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>名前 *</div>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
+                placeholder="あなたの名前" style={inputSt}/>
+            </div>
+            <div>
+              <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>ニックネーム</div>
+              <input value={form.nickname} onChange={e=>setForm(f=>({...f,nickname:e.target.value}))}
+                placeholder="あだ名（省略可）" style={inputSt}/>
+            </div>
+            <div>
+              <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>職業</div>
+              <input value={form.job} onChange={e=>setForm(f=>({...f,job:e.target.value}))}
+                placeholder="例：デザイナー、学生…" style={inputSt}/>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8, marginTop:16 }}>
+            <Btn onClick={()=>setStep(0)} v="ghost" sm>← 戻る</Btn>
+            <Btn onClick={()=>setStep(2)} dis={!form.name.trim()} style={{flex:1,textAlign:"center"}}>次へ →</Btn>
+          </div>
+        </Card>
+      )}
+
+      {step===2 && (
+        <Card style={{ width:"100%", maxWidth:340 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)", marginBottom:12 }}>🎨 アイコン設定</div>
+          <div style={{ textAlign:"center", marginBottom:14 }}>
+            <div style={{ width:64, height:64, borderRadius:32, background:COLORS[colorIdx],
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:30, margin:"0 auto 10px", boxShadow:"0 4px 12px rgba(0,0,0,.15)" }}>
+              {form.emoji}
+            </div>
+            <div style={{ fontSize:13, fontWeight:600, color:"var(--ink)" }}>{form.name}</div>
+          </div>
+          <div style={{ fontSize:11, color:"var(--mid)", marginBottom:6, fontWeight:600 }}>絵文字</div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
+            {EMOJIS.map(e=><button key={e} onClick={()=>setForm(f=>({...f,emoji:e}))}
+              style={{ width:34, height:34, borderRadius:8, border:form.emoji===e?"2px solid var(--t1)":"1px solid var(--light)",
+                background:form.emoji===e?"var(--t1p)":"transparent", cursor:"pointer", fontSize:18 }}>{e}</button>)}
+          </div>
+          <div style={{ fontSize:11, color:"var(--mid)", marginBottom:6, fontWeight:600 }}>カラー</div>
+          <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+            {COLORS.map((c,i)=><button key={i} onClick={()=>setColorIdx(i)}
+              style={{ width:28, height:28, borderRadius:14, background:c,
+                border:colorIdx===i?"3px solid var(--ink)":"2px solid white", cursor:"pointer" }}/>)}
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn onClick={()=>setStep(1)} v="ghost" sm>← 戻る</Btn>
+            <Btn onClick={()=>setStep(3)} style={{flex:1,textAlign:"center"}}>次へ →</Btn>
+          </div>
+        </Card>
+      )}
+
+      {step===3 && (
+        <Card style={{ width:"100%", maxWidth:340 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)", marginBottom:12 }}>📝 自己紹介</div>
+          <div style={{ marginBottom:10 }}>
+            <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>ひとこと</div>
+            <textarea value={form.bio} onChange={e=>setForm(f=>({...f,bio:e.target.value}))}
+              placeholder="趣味・好きなこと・自己紹介など…" rows={3}
+              style={{...inputSt, resize:"none", lineHeight:1.7}}/>
+          </div>
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>趣味</div>
+            <input value={form.hobbies} onChange={e=>setForm(f=>({...f,hobbies:e.target.value}))}
+              placeholder="例：カフェ巡り・読書・旅行" style={inputSt}/>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn onClick={()=>setStep(2)} v="ghost" sm>← 戻る</Btn>
+            <Btn onClick={handleComplete} style={{flex:1,textAlign:"center"}}>✅ 登録完了！</Btn>
+          </div>
+        </Card>
+      )}
+
+      {/* step indicator */}
+      <div style={{ display:"flex", gap:6 }}>
+        {[0,1,2,3].map(i=><div key={i} style={{ width:i===step?20:6, height:6, borderRadius:3,
+          background:i<=step?"var(--t1)":"rgba(128,128,128,.2)", transition:"all .3s" }}/>)}
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// MY PAGE（個人ページ）
+// ══════════════════════════════════════════════════════════════════════════
+const MyPage = ({ me, onUpdateMe, allUsers, friends, groups, onNav }) => {
+  const [tab, setTab] = useState("profile"); // profile | albums | diary
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({...me});
+  const [showAlbum, setShowAlbum] = useState(null);
+  const [newDiary, setNewDiary] = useState(false);
+  const [diaryForm, setDiaryForm] = useState({ title:"", body:"", mood:"😊" });
+  const [lightbox, setLightbox] = useState(null);
+  const fileRef = useRef(null);
+  const cameraRef = useRef(null);
+  const [addPhotoMenu, setAddPhotoMenu] = useState(false);
+
+  const MOODS = ["😊","😆","😢","😡","😴","🥰","🤔","😎","🥺","🎉"];
+  const COLORS = [
+    "linear-gradient(135deg,#5bc8d4,#2d9aa8)","linear-gradient(135deg,#c0524a,#9a3830)",
+    "linear-gradient(135deg,#7986cb,#5c6bc0)","linear-gradient(135deg,#4db6ac,#00897b)",
+    "linear-gradient(135deg,#bf8a5e,#a0693a)","linear-gradient(135deg,#a05060,#7d3245)",
+    "linear-gradient(135deg,#5c8a6e,#3d6b52)","linear-gradient(135deg,#ef9a9a,#e57373)",
+  ];
+  const EMOJIS = ["🌟","🌊","🌺","🐾","🤖","🌸","🦊","🐻","🐰","💫","🎀","🎸","⚽","❄️","🍀","🎵","🌙","🦋","🌈","🔥"];
+
+  const saveEdit = () => { onUpdateMe(editForm); setEditMode(false); };
+
+  const handleFiles = (files, albumId) => {
+    if (!files || !files.length) return;
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const updated = { ...me, albums: me.albums.map(a =>
+          a.id === albumId ? { ...a, photos:[...a.photos,{id:genId(),url:e.target.result,ts:Date.now(),caption:""}] } : a
+        )};
+        onUpdateMe(updated);
+      };
+      reader.readAsDataURL(file);
+    });
+    setAddPhotoMenu(false);
+  };
+
+  const addAlbum = () => {
+    const name = prompt("アルバム名を入力してください");
+    if (!name) return;
+    onUpdateMe({...me, albums:[...me.albums, {id:genId(), name, photos:[]}]});
+  };
+
+  const deletePhoto = (albumId, photoId) => {
+    onUpdateMe({...me, albums: me.albums.map(a =>
+      a.id === albumId ? {...a, photos: a.photos.filter(p => p.id !== photoId)} : a
+    )});
+  };
+
+  const saveDiary = () => {
+    if (!diaryForm.title.trim() && !diaryForm.body.trim()) { setNewDiary(false); return; }
+    const entry = { id:genId(), ...diaryForm, ts:Date.now() };
+    onUpdateMe({...me, diary:[entry,...(me.diary||[])]});
+    setDiaryForm({title:"",body:"",mood:"😊"}); setNewDiary(false);
+  };
+
+  const deleteDiary = id => onUpdateMe({...me, diary:(me.diary||[]).filter(d=>d.id!==id)});
+
+  const inputSt = { width:"100%", border:"1px solid var(--hborder)", borderRadius:10,
+    padding:"8px 11px", fontFamily:"inherit", fontSize:13, background:"var(--t1p)", color:"var(--ink)" };
+
+  // ── Profile Tab
+  const ProfileSection = () => (
+    <div style={{ padding:"12px 14px", overflowY:"auto", height:"100%" }}>
+      {editMode ? (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {/* アバター編集 */}
+          <Card style={{ textAlign:"center" }}>
+            <div style={{ width:60, height:60, borderRadius:30, background:editForm.color||me.color,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:28, margin:"0 auto 10px" }}>{editForm.emoji}</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:5, justifyContent:"center", marginBottom:8 }}>
+              {EMOJIS.map(e=><button key={e} onClick={()=>setEditForm(f=>({...f,emoji:e}))}
+                style={{ width:28, height:28, borderRadius:7, border:editForm.emoji===e?"2px solid var(--t1)":"1px solid var(--light)",
+                  background:editForm.emoji===e?"var(--t1p)":"transparent", cursor:"pointer", fontSize:14 }}>{e}</button>)}
+            </div>
+            <div style={{ display:"flex", gap:5, justifyContent:"center" }}>
+              {COLORS.map((c,i)=><button key={i} onClick={()=>setEditForm(f=>({...f,color:c}))}
+                style={{ width:24, height:24, borderRadius:12, background:c,
+                  border:(editForm.color||me.color)===c?"3px solid var(--ink)":"2px solid white", cursor:"pointer" }}/>)}
+            </div>
+          </Card>
+          {[["名前","name","あなたの名前"],["ニックネーム","nickname","あだ名"],["職業","job","例：デザイナー"],["趣味","hobbies","例：カフェ巡り"]].map(([lbl,key,ph])=>(
+            <div key={key}>
+              <div style={{ fontSize:11, color:"var(--mid)", marginBottom:3, fontWeight:600 }}>{lbl}</div>
+              <input value={editForm[key]||""} onChange={e=>setEditForm(f=>({...f,[key]:e.target.value}))}
+                placeholder={ph} style={inputSt}/>
+            </div>
+          ))}
+          <div>
+            <div style={{ fontSize:11, color:"var(--mid)", marginBottom:3, fontWeight:600 }}>ひとこと</div>
+            <textarea value={editForm.bio||""} onChange={e=>setEditForm(f=>({...f,bio:e.target.value}))}
+              rows={3} placeholder="自己紹介…" style={{...inputSt,resize:"none",lineHeight:1.7}}/>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn onClick={()=>setEditMode(false)} v="ghost" sm>キャンセル</Btn>
+            <Btn onClick={saveEdit} style={{flex:1,textAlign:"center"}}>保存</Btn>
+          </div>
+        </div>
+      ) : (
+        <>
+          <Card style={{ textAlign:"center", marginBottom:12, position:"relative" }}>
+            <Avatar user={me} size={64} style={{ margin:"0 auto 10px" }}/>
+            <div style={{ fontSize:18, fontWeight:700, color:"var(--ink)" }}>{me.name}</div>
+            {me.nickname && me.nickname!==me.name &&
+              <div style={{ fontSize:12, color:"var(--mid)", marginTop:2 }}>「{me.nickname}」</div>}
+            {me.job && <div style={{ fontSize:12, color:"var(--mid)", marginTop:4 }}>💼 {me.job}</div>}
+            {me.hobbies && <div style={{ fontSize:12, color:"var(--mid)", marginTop:2 }}>🎨 {me.hobbies}</div>}
+            {me.bio && <div style={{ fontSize:13, color:"var(--ink)", marginTop:8, lineHeight:1.7, textAlign:"left",
+              background:"var(--t1p)", borderRadius:10, padding:"8px 10px" }}>{me.bio}</div>}
+            <button onClick={()=>{setEditForm({...me});setEditMode(true);}}
+              style={{ position:"absolute", top:10, right:10, background:"var(--t1p)",
+                border:"1px solid var(--hborder)", borderRadius:8, padding:"4px 9px",
+                fontSize:11, cursor:"pointer", fontWeight:600, color:"var(--t1d)", fontFamily:"inherit" }}>✏️ 編集</button>
+          </Card>
+
+          {/* Stats */}
+          <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+            {[["友達",friends.length],["グループ",groups.length],["アルバム",(me.albums||[]).length]].map(([lbl,cnt])=>(
+              <div key={lbl} style={{ flex:1, background:"var(--card)", borderRadius:12, padding:"10px",
+                textAlign:"center", border:"1px solid rgba(128,128,128,.08)", boxShadow:"0 1px 4px var(--shadow)" }}>
+                <div style={{ fontSize:18, fontWeight:700, color:"var(--t1d)" }}>{cnt}</div>
+                <div style={{ fontSize:10, color:"var(--mid)", marginTop:2, fontWeight:600 }}>{lbl}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Friends preview */}
+          {friends.length > 0 && (
+            <Card style={{ marginBottom:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"var(--ink)" }}>友達</div>
+                <button onClick={()=>onNav("friends")}
+                  style={{ background:"none", border:"none", fontSize:11, color:"var(--t1d)", cursor:"pointer", fontFamily:"inherit", fontWeight:600 }}>
+                  すべて見る →
+                </button>
+              </div>
+              <div style={{ display:"flex", gap:10, overflowX:"auto" }}>
+                {friends.slice(0,6).map(f=>(
+                  <div key={f.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, flexShrink:0 }}>
+                    <Avatar user={f} size={44}/>
+                    <div style={{ fontSize:10, color:"var(--mid)", maxWidth:44, textAlign:"center",
+                      overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.nickname||f.name}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  // ── Albums Tab
+  const AlbumsSection = () => {
+    const currentAlbum = me.albums?.find(a => a.id === showAlbum);
+    if (showAlbum && currentAlbum) return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+        <div style={{ padding:"8px 12px", display:"flex", alignItems:"center", gap:8,
+          borderBottom:"1px solid var(--hborder)", background:"var(--hbg)", flexShrink:0 }}>
+          <Btn onClick={()=>setShowAlbum(null)} v="ghost" sm>← 戻る</Btn>
+          <span style={{ flex:1, fontSize:14, fontWeight:700, color:"var(--ink)" }}>{currentAlbum.name}</span>
+          <div style={{ position:"relative" }}>
+            <Btn onClick={()=>setAddPhotoMenu(m=>!m)} sm>＋ 追加</Btn>
+            {addPhotoMenu && (
+              <div style={{ position:"absolute", top:"calc(100% + 5px)", right:0, zIndex:50,
+                background:"var(--card)", borderRadius:11, boxShadow:"0 4px 18px var(--shadow)",
+                border:"1px solid var(--hborder)", overflow:"hidden", minWidth:138 }}>
+                <label style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
+                  cursor:"pointer", fontSize:12, fontWeight:600, color:"var(--ink)", borderBottom:"1px solid var(--hborder)" }}>
+                  📷 カメラ
+                  <input ref={cameraRef} type="file" accept="image/*" capture="environment"
+                    style={{ display:"none" }} onChange={e=>handleFiles(e.target.files, showAlbum)}/>
+                </label>
+                <label style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
+                  cursor:"pointer", fontSize:12, fontWeight:600, color:"var(--ink)" }}>
+                  🖼 フォルダから
+                  <input ref={fileRef} type="file" accept="image/*" multiple
+                    style={{ display:"none" }} onChange={e=>handleFiles(e.target.files, showAlbum)}/>
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+        {addPhotoMenu && <div onClick={()=>setAddPhotoMenu(false)} style={{ position:"fixed", inset:0, zIndex:49 }}/>}
+        <div style={{ flex:1, overflowY:"auto", padding:8 }}>
+          {!currentAlbum.photos?.length && (
+            <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+              <div style={{ fontSize:36, marginBottom:8 }}>📷</div>写真を追加してね
+            </div>
+          )}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:4 }}>
+            {currentAlbum.photos?.map(photo=>(
+              <div key={photo.id} style={{ position:"relative" }}>
+                <div style={{ aspectRatio:"1", overflow:"hidden", borderRadius:8 }}>
+                  <img src={photo.url} alt="" onClick={()=>setLightbox(photo)}
+                    style={{ width:"100%", height:"100%", objectFit:"cover", cursor:"pointer", display:"block" }}/>
+                </div>
+                <button onClick={()=>deletePhoto(showAlbum, photo.id)}
+                  style={{ position:"absolute", top:3, right:3, width:18, height:18, borderRadius:9,
+                    background:"rgba(0,0,0,.45)", border:"none", color:"white",
+                    fontSize:10, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+        {lightbox && (
+          <div onClick={()=>setLightbox(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.88)",
+            display:"flex", alignItems:"center", justifyContent:"center", zIndex:200 }}>
+            <img src={lightbox.url} alt="" style={{ maxWidth:"92vw", maxHeight:"80vh", borderRadius:12 }}/>
+            <div style={{ position:"absolute", top:16, right:16, width:30, height:30, borderRadius:15,
+              background:"rgba(255,255,255,.15)", display:"flex", alignItems:"center", justifyContent:"center",
+              color:"white", fontWeight:700, fontSize:18, cursor:"pointer" }}>×</div>
+          </div>
+        )}
+      </div>
+    );
+
+    return (
+      <div style={{ padding:12, overflowY:"auto", height:"100%" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>マイアルバム</div>
+          <Btn onClick={addAlbum} sm>＋ アルバム追加</Btn>
+        </div>
+        {(!me.albums || me.albums.length===0) && (
+          <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>📁</div>アルバムがありません
+          </div>
+        )}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+          {me.albums?.map(album=>(
+            <div key={album.id} onClick={()=>setShowAlbum(album.id)}
+              style={{ background:"var(--card)", borderRadius:12, overflow:"hidden",
+                boxShadow:"0 1px 6px var(--shadow)", border:"1px solid rgba(128,128,128,.08)", cursor:"pointer" }}>
+              <div style={{ height:90, background:"var(--t1p)", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                {album.photos?.length > 0
+                  ? <img src={album.photos[0].url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  : <span style={{ fontSize:28 }}>📷</span>}
+              </div>
+              <div style={{ padding:"8px 10px" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:"var(--ink)" }}>{album.name}</div>
+                <div style={{ fontSize:10, color:"var(--mid)", marginTop:2 }}>{album.photos?.length||0}枚</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Diary Tab
+  const DiarySection = () => {
+    if (newDiary) return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+        <div style={{ padding:"8px 12px", display:"flex", alignItems:"center", gap:8,
+          borderBottom:"1px solid var(--hborder)", background:"var(--hbg)", flexShrink:0 }}>
+          <Btn onClick={()=>setNewDiary(false)} v="ghost" sm>← 戻る</Btn>
+          <span style={{ flex:1, fontSize:14, fontWeight:700, color:"var(--ink)" }}>日記を書く</span>
+          <Btn onClick={saveDiary} sm>保存</Btn>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:12, display:"flex", flexDirection:"column", gap:10 }}>
+          <div>
+            <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>タイトル</div>
+            <input value={diaryForm.title} onChange={e=>setDiaryForm(f=>({...f,title:e.target.value}))}
+              placeholder="今日のタイトル…" style={{ width:"100%", border:"1px solid var(--hborder)", borderRadius:10,
+                padding:"8px 11px", fontFamily:"inherit", fontSize:14, fontWeight:700,
+                background:"var(--t1p)", color:"var(--ink)" }}/>
+          </div>
+          <div>
+            <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>気分</div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {MOODS.map(m=><button key={m} onClick={()=>setDiaryForm(f=>({...f,mood:m}))}
+                style={{ width:36, height:36, borderRadius:18, border:diaryForm.mood===m?"2px solid var(--t1)":"1px solid var(--light)",
+                  background:diaryForm.mood===m?"var(--t1p)":"transparent", cursor:"pointer", fontSize:20 }}>{m}</button>)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize:11, color:"var(--mid)", marginBottom:4, fontWeight:600 }}>日記</div>
+            <textarea value={diaryForm.body} onChange={e=>setDiaryForm(f=>({...f,body:e.target.value}))}
+              placeholder="今日のことを書いてね…" rows={8}
+              style={{ width:"100%", border:"1px solid var(--hborder)", borderRadius:10,
+                padding:"8px 11px", fontFamily:"inherit", fontSize:14, lineHeight:1.8,
+                background:"var(--t1p)", color:"var(--ink)", resize:"none" }}/>
+          </div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ padding:12, overflowY:"auto", height:"100%" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>日記</div>
+          <Btn onClick={()=>setNewDiary(true)} sm>＋ 書く</Btn>
+        </div>
+        {(!me.diary || me.diary.length===0) && (
+          <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>📔</div>まだ日記がありません
+          </div>
+        )}
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {(me.diary||[]).map(d=>(
+            <Card key={d.id} style={{ position:"relative" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                <span style={{ fontSize:22 }}>{d.mood}</span>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>{d.title||"無題"}</div>
+                  <div style={{ fontSize:10, color:"var(--light)" }}>{fmtDate(d.ts)}</div>
+                </div>
+              </div>
+              {d.body && <div style={{ fontSize:13, color:"var(--mid)", lineHeight:1.7 }}>
+                {d.body.slice(0,80)}{d.body.length>80?"…":""}
+              </div>}
+              <button onClick={()=>deleteDiary(d.id)}
+                style={{ position:"absolute", top:8, right:10, background:"none", border:"none",
+                  color:"var(--light)", fontSize:14, cursor:"pointer" }}>×</button>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const TABS = [
+    { id:"profile", label:"プロフ",  icon:"👤" },
+    { id:"albums",  label:"アルバム", icon:"🖼" },
+    { id:"diary",   label:"日記",    icon:"📔" },
+  ];
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      {/* Sub tabs */}
+      <div style={{ padding:"8px 12px 0", flexShrink:0, borderBottom:"1px solid var(--hborder)", background:"var(--hbg)" }}>
+        <div style={{ display:"flex", gap:0 }}>
+          {TABS.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)}
+              style={{ flex:1, padding:"8px 4px 10px", border:"none", background:"none",
+                fontFamily:"inherit", fontSize:12, fontWeight:tab===t.id?700:500,
+                color:tab===t.id?"var(--t1d)":"var(--mid)", cursor:"pointer",
+                borderBottom:tab===t.id?"2px solid var(--t1)":"2px solid transparent",
+                transition:"all .2s" }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ flex:1, overflow:"hidden" }}>
+        {tab==="profile" && <ProfileSection/>}
+        {tab==="albums"  && <AlbumsSection/>}
+        {tab==="diary"   && <DiarySection/>}
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// FRIENDS PAGE（友達一覧・追加・検索）
+// ══════════════════════════════════════════════════════════════════════════
+const FriendsPage = ({ me, allUsers, friends, onAddFriend, onRemoveFriend, onViewUser, groups, onCreateGroup }) => {
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("friends"); // friends | search | groups
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupForm, setGroupForm] = useState({ name:"", desc:"", members:[] });
+
+  const notFriends = allUsers.filter(u => u.id !== me.id && !friends.find(f=>f.id===u.id));
+  const searchResults = notFriends.filter(u =>
+    u.name.includes(search) || u.nickname?.includes(search) || u.id.includes(search)
+  );
+
+  const handleCreateGroup = () => {
+    if (!groupForm.name.trim()) return;
+    onCreateGroup({
+      id: genId(),
+      name: groupForm.name,
+      desc: groupForm.desc,
+      members: [me.id, ...groupForm.members],
+      chat: [],
+      albums: [{ id:genId(), name:"グループアルバム", photos:[] }],
+      createdAt: Date.now(),
+      createdBy: me.id,
+    });
+    setGroupForm({name:"",desc:"",members:[]}); setShowCreateGroup(false);
+  };
+
+  const UserCard = ({ user, isFriend }) => (
+    <div style={{ background:"var(--card)", borderRadius:12, padding:"11px 13px",
+      boxShadow:"0 1px 5px var(--shadow)", border:"1px solid rgba(128,128,128,.08)",
+      display:"flex", alignItems:"center", gap:10 }}>
+      <Avatar user={user} size={44} style={{ cursor:"pointer" }} onClick={()=>onViewUser(user)}/>
+      <div style={{ flex:1, cursor:"pointer" }} onClick={()=>onViewUser(user)}>
+        <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>{user.name}</div>
+        <div style={{ fontSize:11, color:"var(--mid)" }}>{user.nickname&&user.nickname!==user.name?`「${user.nickname}」`:""}{user.job?" · "+user.job:""}</div>
+      </div>
+      {isFriend
+        ? <Btn onClick={()=>onRemoveFriend(user.id)} v="ghost" sm>削除</Btn>
+        : <Btn onClick={()=>onAddFriend(user)} sm>＋ 追加</Btn>
+      }
+    </div>
+  );
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      {/* tabs */}
+      <div style={{ padding:"8px 12px 0", flexShrink:0, borderBottom:"1px solid var(--hborder)", background:"var(--hbg)" }}>
+        <div style={{ display:"flex", gap:0 }}>
+          {[["friends","友達"],["search","検索"],["groups","グループ"]].map(([id,lbl])=>(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{ flex:1, padding:"8px 4px 10px", border:"none", background:"none",
+                fontFamily:"inherit", fontSize:12, fontWeight:tab===id?700:500,
+                color:tab===id?"var(--t1d)":"var(--mid)", cursor:"pointer",
+                borderBottom:tab===id?"2px solid var(--t1)":"2px solid transparent" }}>
+              {id==="friends"?"👫":id==="search"?"🔍":"👥"} {lbl}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex:1, overflowY:"auto", padding:12 }}>
+
+        {/* 友達一覧 */}
+        {tab==="friends" && (<>
+          <div style={{ fontSize:13, fontWeight:700, color:"var(--ink)", marginBottom:10 }}>
+            友達 {friends.length}人
+          </div>
+          {friends.length===0 && (
+            <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>👫</div>
+              まだ友達がいません<br/>
+              <button onClick={()=>setTab("search")}
+                style={{ background:"none", border:"none", color:"var(--t1d)", fontSize:13,
+                  cursor:"pointer", fontFamily:"inherit", fontWeight:600, marginTop:8 }}>
+                → 友達を探す
+              </button>
+            </div>
+          )}
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {friends.map(f=><UserCard key={f.id} user={f} isFriend={true}/>)}
+          </div>
+        </>)}
+
+        {/* 友達検索 */}
+        {tab==="search" && (<>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="名前・ニックネームで検索…"
+            style={{ width:"100%", border:"1px solid var(--hborder)", borderRadius:10,
+              padding:"9px 12px", fontFamily:"inherit", fontSize:13, background:"var(--t1p)",
+              color:"var(--ink)", marginBottom:12 }}/>
+          <div style={{ fontSize:11, color:"var(--mid)", marginBottom:8, fontWeight:600 }}>
+            {search ? `「${search}」の検索結果` : "すべてのユーザー"}
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {(search ? searchResults : notFriends).map(u=><UserCard key={u.id} user={u} isFriend={false}/>)}
+          </div>
+          {(search ? searchResults : notFriends).length===0 && (
+            <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>🔍</div>
+              {search ? "見つかりませんでした" : "新しいユーザーはいません"}
+            </div>
+          )}
+        </>)}
+
+        {/* グループ */}
+        {tab==="groups" && (<>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"var(--ink)" }}>グループ {groups.length}件</div>
+            <Btn onClick={()=>setShowCreateGroup(true)} sm>＋ 作成</Btn>
+          </div>
+
+          {showCreateGroup && (
+            <Card style={{ marginBottom:12 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:"var(--ink)", marginBottom:10 }}>グループを作成</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <input value={groupForm.name} onChange={e=>setGroupForm(f=>({...f,name:e.target.value}))}
+                  placeholder="グループ名 *"
+                  style={{ width:"100%", border:"1px solid var(--hborder)", borderRadius:9, padding:"7px 10px",
+                    fontFamily:"inherit", fontSize:13, background:"var(--t1p)", color:"var(--ink)" }}/>
+                <input value={groupForm.desc} onChange={e=>setGroupForm(f=>({...f,desc:e.target.value}))}
+                  placeholder="説明（省略可）"
+                  style={{ width:"100%", border:"1px solid var(--hborder)", borderRadius:9, padding:"7px 10px",
+                    fontFamily:"inherit", fontSize:13, background:"var(--t1p)", color:"var(--ink)" }}/>
+                {friends.length > 0 && (<>
+                  <div style={{ fontSize:11, color:"var(--mid)", fontWeight:600 }}>メンバーを追加（友達から）</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                    {friends.map(f=>(
+                      <label key={f.id} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                        <input type="checkbox"
+                          checked={groupForm.members.includes(f.id)}
+                          onChange={e=>setGroupForm(prev=>({...prev,
+                            members:e.target.checked?[...prev.members,f.id]:prev.members.filter(id=>id!==f.id)
+                          }))}/>
+                        <Avatar user={f} size={28}/>
+                        <span style={{ fontSize:13, color:"var(--ink)" }}>{f.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>)}
+              </div>
+              <div style={{ display:"flex", gap:8, marginTop:10 }}>
+                <Btn onClick={()=>setShowCreateGroup(false)} v="ghost" sm>キャンセル</Btn>
+                <Btn onClick={handleCreateGroup} dis={!groupForm.name.trim()} style={{flex:1,textAlign:"center"}} sm>作成</Btn>
+              </div>
+            </Card>
+          )}
+
+          {groups.length===0 && !showCreateGroup && (
+            <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>👥</div>
+              まだグループがありません
+            </div>
+          )}
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {groups.map(g=>(
+              <Card key={g.id} style={{ cursor:"pointer" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:44, height:44, borderRadius:22,
+                    background:"linear-gradient(135deg,var(--t1),var(--t1d))",
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>👥</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>{g.name}</div>
+                    <div style={{ fontSize:11, color:"var(--mid)" }}>{g.members.length}人のメンバー</div>
+                    {g.desc && <div style={{ fontSize:11, color:"var(--mid)" }}>{g.desc}</div>}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// USER PROFILE VIEW（他ユーザーのページ閲覧）
+// ══════════════════════════════════════════════════════════════════════════
+const UserProfileView = ({ user, isFriend, onAddFriend, onRemoveFriend, onBack }) => {
+  const [tab, setTab] = useState("profile");
+  const [lightbox, setLightbox] = useState(null);
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ padding:"8px 12px", display:"flex", alignItems:"center", gap:8,
+        borderBottom:"1px solid var(--hborder)", background:"var(--hbg)", flexShrink:0 }}>
+        <Btn onClick={onBack} v="ghost" sm>← 戻る</Btn>
+        <span style={{ flex:1, fontSize:14, fontWeight:700, color:"var(--ink)" }}>{user.name}</span>
+        {isFriend
+          ? <Btn onClick={()=>onRemoveFriend(user.id)} v="ghost" sm>削除</Btn>
+          : <Btn onClick={()=>onAddFriend(user)} sm>＋ 友達追加</Btn>}
+      </div>
+
+      {/* profile header */}
+      <div style={{ padding:"14px", background:"var(--hbg)", borderBottom:"1px solid var(--hborder)", flexShrink:0 }}>
+        <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+          <Avatar user={user} size={56}/>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:16, fontWeight:700, color:"var(--ink)" }}>{user.name}</div>
+            {user.nickname && user.nickname!==user.name &&
+              <div style={{ fontSize:11, color:"var(--mid)" }}>「{user.nickname}」</div>}
+            {user.job && <div style={{ fontSize:11, color:"var(--mid)", marginTop:2 }}>💼 {user.job}</div>}
+            {user.hobbies && <div style={{ fontSize:11, color:"var(--mid)" }}>🎨 {user.hobbies}</div>}
+          </div>
+        </div>
+        {user.bio && (
+          <div style={{ marginTop:10, fontSize:13, color:"var(--ink)", lineHeight:1.7,
+            background:"var(--t1p)", borderRadius:10, padding:"8px 10px" }}>{user.bio}</div>
+        )}
+      </div>
+
+      {/* tabs */}
+      <div style={{ flexShrink:0, borderBottom:"1px solid var(--hborder)", background:"var(--hbg)" }}>
+        <div style={{ display:"flex", padding:"0 12px" }}>
+          {[["profile","プロフ","👤"],["albums","アルバム","🖼"]].map(([id,lbl,ic])=>(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{ padding:"8px 12px 10px", border:"none", background:"none",
+                fontFamily:"inherit", fontSize:12, fontWeight:tab===id?700:500,
+                color:tab===id?"var(--t1d)":"var(--mid)", cursor:"pointer",
+                borderBottom:tab===id?"2px solid var(--t1)":"2px solid transparent" }}>
+              {ic} {lbl}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex:1, overflowY:"auto", padding:12 }}>
+        {tab==="profile" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {isFriend
+              ? <div style={{ textAlign:"center", padding:"8px 0", fontSize:12,
+                  color:"var(--t1d)", fontWeight:600 }}>👫 友達です</div>
+              : <div style={{ textAlign:"center", padding:"8px 0", fontSize:12,
+                  color:"var(--mid)" }}>まだ友達ではありません</div>
+            }
+            {[["好きなこと",user.likes],["好きな食べ物",user.food],["好きなお酒",user.alcohol]].filter(([,v])=>v).map(([k,v])=>(
+              <Card key={k}>
+                <div style={{ fontSize:11, fontWeight:600, color:"var(--mid)", marginBottom:3 }}>{k}</div>
+                <div style={{ fontSize:13, color:"var(--ink)" }}>{v}</div>
+              </Card>
+            ))}
+          </div>
+        )}
+        {tab==="albums" && (
+          <>
+            {(!user.albums || user.albums.length===0) && (
+              <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>📷</div>アルバムがありません
+              </div>
+            )}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+              {user.albums?.map(album=>(
+                <div key={album.id} style={{ background:"var(--card)", borderRadius:12, overflow:"hidden",
+                  boxShadow:"0 1px 6px var(--shadow)", border:"1px solid rgba(128,128,128,.08)" }}>
+                  <div style={{ height:80, background:"var(--t1p)", display:"flex", alignItems:"center",
+                    justifyContent:"center", overflow:"hidden" }}>
+                    {album.photos?.length > 0
+                      ? <img src={album.photos[0].url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                      : <span style={{ fontSize:24 }}>📷</span>}
+                  </div>
+                  <div style={{ padding:"7px 9px" }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:"var(--ink)" }}>{album.name}</div>
+                    <div style={{ fontSize:10, color:"var(--mid)", marginTop:1 }}>{album.photos?.length||0}枚</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      {lightbox && (
+        <div onClick={()=>setLightbox(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.88)",
+          display:"flex", alignItems:"center", justifyContent:"center", zIndex:200 }}>
+          <img src={lightbox.url} alt="" style={{ maxWidth:"92vw", maxHeight:"80vh", borderRadius:12 }}/>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// HOME FEED（ホーム・タイムライン）
+// ══════════════════════════════════════════════════════════════════════════
+const HomeFeed = ({ me, friends, groups, onNav }) => {
+  // フィードを生成（友達のアルバム・日記から）
+  const feed = [];
+  [...friends, me].forEach(user => {
+    (user.albums||[]).forEach(album => {
+      (album.photos||[]).forEach(photo => {
+        feed.push({ type:"photo", user, album, photo, ts: photo.ts });
+      });
+    });
+    (user.diary||[]).forEach(diary => {
+      feed.push({ type:"diary", user, diary, ts: diary.ts });
+    });
+  });
+  feed.sort((a,b) => b.ts - a.ts);
+
+  return (
+    <div style={{ padding:12, overflowY:"auto", height:"100%" }}>
+      {/* Quick actions */}
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        <button onClick={()=>onNav("friends")}
+          style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid var(--hborder)",
+            background:"var(--card)", cursor:"pointer", fontFamily:"inherit",
+            display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+            boxShadow:"0 1px 4px var(--shadow)" }}>
+          <span style={{ fontSize:20 }}>👫</span>
+          <span style={{ fontSize:10, fontWeight:700, color:"var(--mid)" }}>友達</span>
+        </button>
+        <button onClick={()=>onNav("mypage")}
+          style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid var(--hborder)",
+            background:"var(--card)", cursor:"pointer", fontFamily:"inherit",
+            display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+            boxShadow:"0 1px 4px var(--shadow)" }}>
+          <span style={{ fontSize:20 }}>🖼</span>
+          <span style={{ fontSize:10, fontWeight:700, color:"var(--mid)" }}>アルバム</span>
+        </button>
+        <button onClick={()=>onNav("mypage")}
+          style={{ flex:1, padding:"10px", borderRadius:12, border:"1px solid var(--hborder)",
+            background:"var(--card)", cursor:"pointer", fontFamily:"inherit",
+            display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+            boxShadow:"0 1px 4px var(--shadow)" }}>
+          <span style={{ fontSize:20 }}>📔</span>
+          <span style={{ fontSize:10, fontWeight:700, color:"var(--mid)" }}>日記</span>
+        </button>
+      </div>
+
+      {/* Feed */}
+      <div style={{ fontSize:12, fontWeight:700, color:"var(--mid)", marginBottom:8, letterSpacing:.5 }}>
+        タイムライン
+      </div>
+      {feed.length === 0 && (
+        <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>📱</div>
+          まだ投稿がありません<br/>
+          <button onClick={()=>onNav("friends")}
+            style={{ background:"none", border:"none", color:"var(--t1d)", fontSize:13,
+              cursor:"pointer", fontFamily:"inherit", fontWeight:600, marginTop:8 }}>
+            → 友達を追加して始めよう
+          </button>
+        </div>
+      )}
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {feed.slice(0,20).map((item, idx) => (
+          <Card key={idx}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+              <Avatar user={item.user} size={32}/>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:"var(--ink)" }}>{item.user.name}</div>
+                <div style={{ fontSize:10, color:"var(--light)" }}>{fmtDate(item.ts)}</div>
+              </div>
+              <div style={{ marginLeft:"auto", fontSize:10, color:"var(--mid)", background:"var(--t1p)",
+                padding:"2px 7px", borderRadius:6, fontWeight:600 }}>
+                {item.type==="photo"?"📷 写真":"📔 日記"}
+              </div>
+            </div>
+            {item.type==="photo" && (
+              <img src={item.photo.url} alt="" style={{ width:"100%", borderRadius:10,
+                maxHeight:200, objectFit:"cover", display:"block" }}/>
+            )}
+            {item.type==="diary" && (
+              <div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                  <span style={{ fontSize:18 }}>{item.diary.mood}</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:"var(--ink)" }}>{item.diary.title||"無題"}</span>
+                </div>
+                {item.diary.body && (
+                  <div style={{ fontSize:12, color:"var(--mid)", lineHeight:1.7 }}>
+                    {item.diary.body.slice(0,100)}{item.diary.body.length>100?"…":""}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// CHAT PAGE（友達とのチャット）
+// ══════════════════════════════════════════════════════════════════════════
+const ChatPage = ({ me, friends }) => {
+  const [activeFriend, setActiveFriend] = useState(null);
+  const [chats, setChats] = useState({}); // { friendId: [messages] }
+  const [text, setText] = useState("");
+  const endRef = useRef();
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior:"smooth" }); }, [chats, activeFriend]);
+
+  const send = () => {
+    if (!text.trim() || !activeFriend) return;
+    const msg = { id:genId(), from:"me", body:text.trim(), ts:Date.now(), read:false };
+    setChats(c => ({ ...c, [activeFriend.id]: [...(c[activeFriend.id]||[]), msg] }));
+    setText("");
+    // デモ用自動返信
+    setTimeout(() => {
+      const replies = ["そうだね😊","わかった！","ありがとう","いいね！","また連絡するね"];
+      const reply = { id:genId(), from:activeFriend.id, body:replies[Math.floor(Math.random()*replies.length)], ts:Date.now(), read:false };
+      setChats(c => ({ ...c, [activeFriend.id]: [...(c[activeFriend.id]||[]), reply] }));
+    }, 1000 + Math.random()*1000);
+  };
+
+  const msgs = activeFriend ? (chats[activeFriend.id]||[]) : [];
+
+  if (activeFriend) return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ padding:"8px 12px", display:"flex", alignItems:"center", gap:8,
+        borderBottom:"1px solid var(--hborder)", background:"var(--hbg)", flexShrink:0 }}>
+        <Btn onClick={()=>setActiveFriend(null)} v="ghost" sm>← 戻る</Btn>
+        <Avatar user={activeFriend} size={30}/>
+        <span style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>{activeFriend.name}</span>
+      </div>
+      <div style={{ flex:1, overflowY:"auto", padding:"10px", display:"flex", flexDirection:"column", gap:8 }}>
+        {msgs.length===0 && (
+          <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+            <div style={{ fontSize:28, marginBottom:8 }}>💬</div>
+            {activeFriend.name}さんとのチャットを始めよう！
+          </div>
+        )}
+        {msgs.map(msg => {
+          const isMe = msg.from==="me";
+          return (
+            <div key={msg.id} style={{ display:"flex", justifyContent:isMe?"flex-end":"flex-start" }}>
+              {!isMe && <Avatar user={activeFriend} size={24} style={{ marginRight:6, marginTop:"auto" }}/>}
+              <div style={{ maxWidth:"68%", background:isMe?"var(--btnme)":"var(--card)",
+                color:isMe?"white":"var(--ink)",
+                borderRadius:isMe?"18px 18px 4px 18px":"18px 18px 18px 4px",
+                padding:"8px 12px", boxShadow:"0 1px 5px var(--shadow)",
+                border:isMe?"none":"1px solid rgba(128,128,128,.1)" }}>
+                <span style={{ fontSize:14, lineHeight:1.6 }}>{msg.body}</span>
+                <div style={{ fontSize:9, color:isMe?"rgba(255,255,255,.6)":"var(--light)",
+                  textAlign:"right", marginTop:2 }}>{fmt(msg.ts)}</div>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={endRef}/>
+      </div>
+      <div style={{ padding:"7px 10px 10px", background:"var(--hbg)",
+        borderTop:"1px solid var(--hborder)", display:"flex", gap:6, alignItems:"flex-end" }}>
+        <textarea value={text} onChange={e=>setText(e.target.value)}
+          onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} }}
+          rows={1} placeholder="メッセージ…"
+          style={{ flex:1, resize:"none", border:"1px solid var(--hborder)", borderRadius:16,
+            padding:"7px 11px", fontFamily:"inherit", fontSize:13,
+            background:"var(--t1p)", color:"var(--ink)", lineHeight:1.5, maxHeight:72 }}/>
+        <button onClick={send}
+          style={{ width:30, height:30, borderRadius:15, border:"none", flexShrink:0,
+            background:text.trim()?"var(--btnme)":"var(--light)", color:"white",
+            fontSize:14, cursor:text.trim()?"pointer":"default",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>↑</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding:12, overflowY:"auto", height:"100%" }}>
+      <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)", marginBottom:12 }}>メッセージ</div>
+      {friends.length===0 && (
+        <div style={{ textAlign:"center", color:"var(--light)", fontSize:13, marginTop:40 }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>💬</div>
+          友達を追加するとチャットできます
+        </div>
+      )}
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        {friends.map(f => {
+          const lastMsg = (chats[f.id]||[]).slice(-1)[0];
+          const unread = (chats[f.id]||[]).filter(m=>m.from!=="me"&&!m.read).length;
+          return (
+            <div key={f.id} onClick={()=>setActiveFriend(f)}
+              style={{ background:"var(--card)", borderRadius:12, padding:"10px 12px",
+                boxShadow:"0 1px 5px var(--shadow)", border:"1px solid rgba(128,128,128,.08)",
+                display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
+              <div style={{ position:"relative" }}>
+                <Avatar user={f} size={44}/>
+                {unread>0 && <div style={{ position:"absolute", top:-2, right:-2, width:16, height:16,
+                  borderRadius:8, background:"var(--t2)", color:"white", fontSize:9,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{unread}</div>}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:"var(--ink)" }}>{f.name}</div>
+                <div style={{ fontSize:11, color:"var(--mid)", marginTop:1 }}>
+                  {lastMsg ? lastMsg.body.slice(0,25)+(lastMsg.body.length>25?"…":"") : "タップしてチャット開始"}
+                </div>
+              </div>
+              {lastMsg && <div style={{ fontSize:10, color:"var(--light)" }}>{fmt(lastMsg.ts)}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════════════════════
+const TABS = [
+  { id:"home",    icon:"🏠", label:"ホーム"   },
+  { id:"chat",    icon:"💬", label:"チャット"  },
+  { id:"friends", icon:"👫", label:"友達"      },
+  { id:"mypage",  icon:"👤", label:"マイページ" },
+];
+
+export default function App() {
+  const [phase, setPhase]       = useState("lock");   // lock | onboard | app
+  const [pin, setPin]           = useState("1234");
+  const [me, setMe]             = useState(null);
+  const [themeId, setThemeId]   = useState("chaho");
+  const [tabId, setTabId]       = useState("home");
+  const [viewingUser, setViewingUser] = useState(null);
+
+  // 全ユーザー（デモ用）
+  const [allUsers, setAllUsers] = useState(DEMO_USERS);
+  // 友達リスト（ユーザーオブジェクト）
+  const [friends, setFriends]   = useState([]);
+  // グループ
+  const [groups, setGroups]     = useState([]);
+
+  useEffect(() => {
+    applyTheme("chaho");
+    // CSS injection
+    const s = document.createElement("style");
+    s.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@900&display=swap');
+      *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+      :root{--t1:#5bc8d4;--t1d:#2d9aa8;--t1p:#edf8fa;--t2:#c0524a;--t2d:#9a3830;--t2p:#faecea;--bg:#f5f7f8;--card:#fff;--ink:#1e2428;--mid:#6b7a80;--light:#b0bec5;--shadow:rgba(30,80,90,.10);--hbg:#fff;--hborder:rgba(91,200,212,.22);--grad:linear-gradient(150deg,#eaf7f9,#f5f7f8 50%,#faf0ee);--btnme:linear-gradient(135deg,#c0524a,#9a3830);--btnnav:linear-gradient(135deg,#5bc8d4,#2d9aa8);--dot:#5bc8d4;--dotbar:linear-gradient(90deg,#5bc8d4,#c0524a);}
+      body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);overscroll-behavior:none;background:var(--bg);}
+      textarea:focus,input:focus,button:focus{outline:none;}
+      ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--t1);border-radius:2px;}
+      @keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-4px)}50%{transform:translateX(4px)}}
+      @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes slideInR{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+      @keyframes slideInL{from{transform:translateX(-100%);opacity:0}to{transform:none;opacity:1}}
+    `;
+    document.head.appendChild(s);
+  }, []);
+
+  const handleUnlock = () => {
+    if (me) setPhase("app");
+    else setPhase("onboard");
+  };
+
+  const handleOnboardComplete = (userData) => {
+    setMe(userData);
+    setAllUsers(prev => [...prev, userData]);
+    setPhase("app");
+  };
+
+  const handleUpdateMe = (updated) => {
+    setMe(updated);
+    setAllUsers(prev => prev.map(u => u.id===updated.id ? updated : u));
+  };
+
+  const handleAddFriend = (user) => {
+    if (friends.find(f=>f.id===user.id)) return;
+    setFriends(prev => [...prev, user]);
+    if (!me.friends?.includes(user.id)) {
+      handleUpdateMe({...me, friends:[...(me.friends||[]),user.id]});
+    }
+  };
+
+  const handleRemoveFriend = (userId) => {
+    setFriends(prev => prev.filter(f=>f.id!==userId));
+    handleUpdateMe({...me, friends:(me.friends||[]).filter(id=>id!==userId)});
+  };
+
+  const handleCreateGroup = (group) => {
+    setGroups(prev => [...prev, group]);
+  };
+
+  const handleViewUser = (user) => {
+    setViewingUser(user);
+  };
+
+  const handleNav = (tab) => {
+    setTabId(tab);
+    setViewingUser(null);
+  };
+
+  // ── Render phases
+  if (phase === "lock") return (
+    <div style={{ height:"100%", minHeight:580, fontFamily:"'Noto Sans JP',sans-serif" }}>
+      <LockScreen onUnlock={handleUnlock} savedPin={pin}/>
+    </div>
+  );
+
+  if (phase === "onboard") return (
+    <div style={{ height:"100%", minHeight:580, fontFamily:"'Noto Sans JP',sans-serif", background:"var(--grad)" }}>
+      <Onboarding onComplete={handleOnboardComplete}/>
+    </div>
+  );
+
+  // ── App
+  const renderContent = () => {
+    // 他ユーザーのページを見ている場合
+    if (viewingUser) return (
+      <UserProfileView
+        user={viewingUser}
+        isFriend={!!friends.find(f=>f.id===viewingUser.id)}
+        onAddFriend={handleAddFriend}
+        onRemoveFriend={handleRemoveFriend}
+        onBack={()=>setViewingUser(null)}
+      />
+    );
+
+    switch(tabId) {
+      case "home":    return <HomeFeed me={me} friends={friends} groups={groups} onNav={handleNav}/>;
+      case "chat":    return <ChatPage me={me} friends={friends}/>;
+      case "friends": return <FriendsPage me={me} allUsers={allUsers} friends={friends}
+                               onAddFriend={handleAddFriend} onRemoveFriend={handleRemoveFriend}
+                               onViewUser={handleViewUser} groups={groups} onCreateGroup={handleCreateGroup}/>;
+      case "mypage":  return <MyPage me={me} onUpdateMe={handleUpdateMe} allUsers={allUsers}
+                               friends={friends} groups={groups} onNav={handleNav}/>;
+      default:        return null;
+    }
+  };
+
+  return (
+    <div style={{ height:"100%", minHeight:580, display:"flex", flexDirection:"column",
+      position:"relative", fontFamily:"'Noto Sans JP',sans-serif",
+      overflow:"hidden", background:"var(--bg)" }}>
+
+      {/* 背景 */}
+      <div style={{ position:"absolute", inset:0, background:"var(--grad)", zIndex:0, pointerEvents:"none" }}/>
+
+      {/* Header */}
+      <div style={{ position:"relative", zIndex:2, padding:"8px 14px 7px",
+        background:"var(--hbg)", borderBottom:"1px solid var(--hborder)",
+        display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+        <ChahoLogo size="md"/>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {/* 自分のアバター */}
+          <Avatar user={me} size={30} style={{ cursor:"pointer" }} onClick={()=>{setTabId("mypage");setViewingUser(null);}}/>
+          <button onClick={()=>setPhase("lock")}
+            style={{ background:"var(--t2p)", border:"1px solid rgba(128,128,128,.18)",
+              borderRadius:8, padding:"4px 9px", cursor:"pointer",
+              fontSize:12, color:"var(--t2d)", fontWeight:600, fontFamily:"inherit" }}>🔒</button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex:1, overflow:"hidden", position:"relative", zIndex:1 }}>
+        <div style={{ height:"100%", animation:"fadeIn .2s ease" }}>
+          {renderContent()}
+        </div>
+      </div>
+
+      {/* Bottom Nav */}
+      <div style={{ position:"relative", zIndex:2, display:"flex",
+        background:"var(--hbg)", borderTop:"1px solid var(--hborder)", padding:"2px 0 8px", flexShrink:0 }}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>{setTabId(t.id);setViewingUser(null);}}
+            style={{ flex:1, border:"none", background:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:1,
+              paddingTop:5, fontFamily:"inherit" }}>
+            <span style={{ fontSize:16, filter:tabId===t.id&&!viewingUser?"none":"grayscale(50%) opacity(50%)" }}>
+              {t.id==="friends" && friends.length>0 && tabId!=="friends"
+                ? <span style={{ position:"relative" }}>
+                    {t.icon}
+                    <span style={{ position:"absolute", top:-4, right:-6, width:14, height:14,
+                      borderRadius:7, background:"var(--t2)", color:"white", fontSize:8,
+                      display:"inline-flex", alignItems:"center", justifyContent:"center",
+                      fontWeight:700, border:"1.5px solid var(--hbg)" }}>{friends.length}</span>
+                  </span>
+                : t.icon}
+            </span>
+            <span style={{ fontSize:8, fontWeight:tabId===t.id&&!viewingUser?700:500,
+              color:tabId===t.id&&!viewingUser?"var(--t1d)":"var(--light)", transition:"color .2s" }}>
+              {t.label}
+            </span>
+            {tabId===t.id && !viewingUser &&
+              <span style={{ width:12, height:2, borderRadius:1, background:"var(--dotbar)", marginTop:1 }}/>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
